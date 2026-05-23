@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account registration and synchronization metadata",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Unique identifier of the authenticated user matching their Firebase Auth UID" },
+        "email": { "type": "string", "description": "Primary email address of the user" },
+        "emailVerified": { "type": "boolean", "description": "Whether the user email is verified" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp of last profile activity" }
+      },
+      "required": ["userId", "email"]
+    },
+    "Transaction": {
+      "title": "Shop Transaction",
+      "description": "An income or expense transaction voucher",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique local transaction ID" },
+        "title": { "type": "string", "description": "Title or description of the transaction" },
+        "book": { "type": "string", "description": "Name of the book the transaction belongs to" },
+        "amount": { "type": "number", "description": "Financial value of the transaction" },
+        "isIncome": { "type": "boolean", "description": "True if income, false if expense" },
+        "date": { "type": "string", "format": "date-time", "description": "ISO timestamp for when the transaction took place" },
+        "userId": { "type": "string", "description": "The UID of the user who owns this transaction" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server-generated creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server-generated update timestamp" }
+      },
+      "required": ["id", "title", "book", "amount", "isIncome", "date", "userId", "createdAt", "updatedAt"]
+    },
+    "Book": {
+      "title": "Ledger Book",
+      "description": "A ledger book container to organize transactions",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the ledger book" },
+        "userId": { "type": "string", "description": "The UID of the user who owns this custom book" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server-generated creation timestamp" }
+      },
+      "required": ["name", "userId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile metadata documents"
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Sub-collection of ledger transactions for a user"
+    },
+    "/users/{userId}/books/{bookId}": {
+      "schema": "Book",
+      "description": "Sub-collection of custom defined ledger books for a user"
+    }
+  }
+}

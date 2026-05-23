@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Shahid \u0026 Sons CashBook",
+  "description": "An offline premium cashbook ledger app for Shahid \u0026 Sons General Store to track daily sales, income (آمدنی), and expenses (خرچ).",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

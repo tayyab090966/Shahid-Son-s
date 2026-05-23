@@ -1,0 +1,19 @@
+{
+  "name": "Shahid & Sons CashBook Ledger",
+  "short_name": "CashBook",
+  "description": "An offline premium cashbook ledger app for Shahid & Sons General Store to track daily sales, income (آمدنی), and expenses (خرچ).",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4F6F7",
+  "theme_color": "#196F3D",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

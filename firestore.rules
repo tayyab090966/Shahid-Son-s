@@ -1,0 +1,112 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net (Rule Pillar 1)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable, hardened helpers
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    
+    function isSignedIn() { 
+      return request.auth != null; 
+    }
+    
+    function isOwner(userId) { 
+      return isSignedIn() && request.auth.uid == userId; 
+    }
+
+    // Validations (The Anti-Update-Gap / Validation Blueprints)
+    
+    // 1. User Entity Validation
+    function isValidUser(data) {
+      return data.keys().hasAll(['userId', 'email'])
+        && data.keys().size() <= 4
+        && data.userId is string
+        && data.userId == request.auth.uid
+        && data.email is string
+        && data.email.size() <= 256;
+    }
+
+    // 2. Transaction Entity Validation
+    function isValidTransaction(data, ownerId) {
+      return data.keys().hasAll(['id', 'title', 'book', 'amount', 'isIncome', 'date', 'userId', 'createdAt', 'updatedAt'])
+        && data.keys().size() == 9
+        && data.id is string
+        && data.id.size() <= 128
+        && data.title is string
+        && data.title.size() <= 128
+        && data.book is string
+        && data.book.size() <= 64
+        && data.amount is number
+        && data.amount >= 0
+        && data.isIncome is bool
+        && data.date is string
+        && data.date.size() <= 64
+        && data.userId is string
+        && data.userId == ownerId
+        && data.userId == request.auth.uid;
+    }
+
+    // 3. Book Entity Validation
+    function isValidBook(data, ownerId) {
+      return data.keys().hasAll(['name', 'userId', 'createdAt'])
+        && data.keys().size() == 3
+        && data.name is string
+        && data.name.size() <= 64
+        && data.userId is string
+        && data.userId == ownerId
+        && data.userId == request.auth.uid;
+    }
+
+    // Collection Rules
+    
+    // User Profile
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) 
+        && isValidUser(request.resource.data)
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidUser(request.resource.data)
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.userId == resource.data.userId; // Immutable UID
+      allow delete: if isOwner(userId);
+    }
+
+    // User Sub-collections: Transactions
+    match /users/{userId}/transactions/{transactionId} {
+      allow read, list: if isOwner(userId);
+      allow create: if isOwner(userId) 
+        && isValidId(transactionId)
+        && isValidTransaction(request.resource.data, userId)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidId(transactionId)
+        && isValidTransaction(request.resource.data, userId)
+        && request.resource.data.createdAt == resource.data.createdAt // Immutable createdAt
+        && request.resource.data.updatedAt == request.time
+        && (
+          // Action update - only letting title, book, amount, isIncome, date, updatedAt change
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'book', 'amount', 'isIncome', 'date', 'updatedAt'])
+        );
+      allow delete: if isOwner(userId) && isValidId(transactionId);
+    }
+
+    // User Sub-collections: Books
+    match /users/{userId}/books/{bookId} {
+      allow read, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidId(bookId)
+        && isValidBook(request.resource.data, userId)
+        && request.resource.data.createdAt == request.time;
+      allow update: if false; // Books are immutable or recreated, no edit needed or is strict key
+      allow delete: if isOwner(userId) && isValidId(bookId);
+    }
+  }
+}
